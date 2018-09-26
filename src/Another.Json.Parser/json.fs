@@ -2,7 +2,6 @@ module Json
 
 open Hopac
 open FParsec
-open Hopac
 
 type Json =
     | JString of Promise<string>
@@ -22,7 +21,7 @@ type JPath =
     | DirectChild of rest: JPath
     | RecursiveChild of rest: JPath
     | Child of name: string * arrayPath: ChildPath * rest: JPath
-    | EndOfPath
+     | EndOfPath
 
 let ws   = spaces // eats any whitespace
 let str s = pstring s
@@ -86,10 +85,4 @@ let json = ws >>. jvalue .>> ws .>> eof
 
 let parse = FParsec.CharParsers.run json
 
-let result = parse "{abc:1}"
-
-let jpathStart = str "$"
-let recursive = str ".."
-let child = str "."
-let jPathLevel = recursive <|> child
-
+let result = parse "{abc: {bcd:5}}"

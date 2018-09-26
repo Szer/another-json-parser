@@ -1,95 +1,57 @@
-module Json
+module JPath
 
-open Hopac
 open FParsec
-open Hopac
 
-type Json =
-    | JString of Promise<string>
-    | JNumber of Promise<float>
-    | JBool   of Promise<bool>
-    | JNull   of Promise<unit>
-    | JList   of Stream<Json>
-    | JObject of Stream<string * Json>
-
-type ChildPath =
-    | TakeOne
+type Indexer = 
     | TakeAll
-    | TakeRange of arrayRange: string
-    | TakeByPredicate of predicate: string
+    | Filter of expression: string
+    | Slice of start: int option * finish: int option * step: int option
+    | Union of int list
 
-type JPath = 
-    | DirectChild of rest: JPath
-    | RecursiveChild of rest: JPath
-    | Child of name: string * arrayPath: ChildPath * rest: JPath
-    | EndOfPath
+type JPath =
+    | Root of rest: JPath
+    | Child of name: string * rest: JPath
+    | RecursiveChild of name: string * rest: JPath
+    | Array of index: Indexer * rest: JPath    
+
+let jPathElementParser, jPathElementParserRef = createParserForwardedToRef()
+
+let childName f =
+    let isBracket = pstring "["
+    let isDot = pstring "."
+    let endOfName = isBracket <|> isDot
+    manyChars anyChar .>>? endOfName >>= fun childName ->
+        jPathElementParser |>> fun rest -> f (childName, rest)
+
+let indexer = manyChars anyChar >>% TakeAll
 
 let ws   = spaces // eats any whitespace
-let str s = pstring s
-
-let stringLiteral =
-    let escape =  anyOf "\"\\/bfnrt"
-                  |>> function
-                      | 'b' -> "\b"
-                      | 'f' -> "\u000C"
-                      | 'n' -> "\n"
-                      | 'r' -> "\r"
-                      | 't' -> "\t"
-                      | c   -> string c // every other char is mapped to itself
-
-    let unicodeEscape =
-        str "u" >>. pipe4 hex hex hex hex (fun h3 h2 h1 h0 ->
-            let hex2int c = (int c &&& 15) + (int c >>> 6)*9 // hex char to int
-            (hex2int h3)*4096 + (hex2int h2)*256 + (hex2int h1)*16 + hex2int h0
-            |> char |> string
-        )
-
-    between (str "\"") (str "\"")
-            (stringsSepBy (manySatisfy (fun c -> c <> '"' && c <> '\\'))
-                          (str "\\" >>. (escape <|> unicodeEscape)))
+let root = pstring "$" >>. (jPathElementParser |>> Root)
+let recChild = pstring ".." >>. childName RecursiveChild
+let child = pstring "." >>. childName Child
+let array = between (pstring "[") (pstring "]") indexer >>= fun index ->
+    jPathElementParser |>> fun rest -> Array(index, rest)
 
 
+do jPathElementParserRef :=
+    choice [
+        recChild
+        child
+        array
+    ]
 
-let jstring = stringLiteral |>> (Promise >> JString)
+let jpath = root >>. jPathElementParser .>> eof
 
-let jnumber = pfloat |>> (Promise >> JNumber) // pfloat will accept a little more than specified by JSON
-                                 // as valid numbers (such as NaN or Infinity), but that makes
-                                 // it only more robust
+let parse = FParsec.CharParsers.run jpath
 
-let jtrue  = stringReturn "true"  (Promise true |> JBool)
-let jfalse = stringReturn "false" (Promise false |> JBool)
-let jnull  = stringReturn "null" (Promise(()) |> JNull)
+//parse "$.abc.bcd[]..e"
 
-// jvalue, jlist and jobject are three mutually recursive grammar productions.
-// In order to break the cyclic dependency, we make jvalue a parser that
-// forwards all calls to a parser in a reference cell.
-let jvalue, jvalueRef = createParserForwardedToRef() // initially jvalueRef holds a reference to a dummy parser
+// let parse = FParsec.CharParsers.run json
 
-let listBetweenStrings sOpen sClose pElement f =
-    between (str sOpen) (str sClose)
-            (ws >>. sepBy (pElement .>> ws) (str "," .>> ws) |>> f)
+// let result = parse "{abc:1}"
 
-let keyValue = tuple2 stringLiteral (ws >>. str ":" >>. ws >>. jvalue)
-
-let jlist   = listBetweenStrings "[" "]" jvalue (Stream.ofSeq >> JList)
-let jobject = listBetweenStrings "{" "}" keyValue (Stream.ofSeq >> Stream.distinctByFun fst >> JObject)
-
-do jvalueRef := choice [jobject
-                        jlist
-                        jstring
-                        jnumber
-                        jtrue
-                        jfalse
-                        jnull]
-
-let json = ws >>. jvalue .>> ws .>> eof
-
-let parse = FParsec.CharParsers.run json
-
-let result = parse "{abc:1}"
-
-let jpathStart = str "$"
-let recursive = str ".."
-let child = str "."
-let jPathLevel = recursive <|> child
+// let jpathStart = str "$"
+// let recursive = str ".."
+// let child = str "."
+// let jPathLevel = recursive <|> child
 
