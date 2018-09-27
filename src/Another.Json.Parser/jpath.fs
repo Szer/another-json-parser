@@ -15,7 +15,6 @@ type Expression =
     | NumberLiteral of double
     | StringLiteral of string
     | JPathLiteral of string list
-    | Paren of expr: Expression
     | And of left: Expression * right: Expression
     | Or of left: Expression * right: Expression
     | Not of expr: Expression
