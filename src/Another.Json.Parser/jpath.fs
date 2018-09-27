@@ -9,7 +9,6 @@ let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
         printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
         reply
 
-
 type Expression =
     | NullLiteral
     | NumberLiteral of double
@@ -31,44 +30,6 @@ let stringLiteral =
     manySatisfy (not << isControlChar)
 
 let ws = spaces
-
-// let expr, exprRef = createParserForwardedToRef()
-// let bw p = ws >>. p .>> ws
-// let nullLit = str "null"  >>% NullLiteral
-// let numberLit = pfloat |> bw |>> NumberLiteral  <!> "number"
-// let strLit =between (str "'") (str "'") stringLiteral |> bw |>> StringLiteral <!> "str"
-// let jPathLit = str "@." >>. sepBy stringLiteral (str ".") |> bw |>> JPathLiteral <!> "jpath"
-// let paren = between (str "(") (str ")") expr |> bw |>> Paren
-
-// let op opList f =
-//     bw expr >>= fun expr1 ->
-//         opList
-//         |> List.map str
-//         |> choice
-//         |> bw
-//         |> fun x -> x >>. bw expr
-//         |>> fun expr2 -> f(expr1, expr2)
-
-// let andOp = op ["&&"; "&"] And
-// let orOp = op ["&&"; "&"] Or
-// let grOp = op [">"] Greater <!> "greater"
-// let lessOp = op ["<"] Less
-// let equalp = op ["=";"=="] Equal
-// let notOp = bw (str "!" >>. expr) |>> Not
-
-// do exprRef := choice [
-//     nullLit
-//     numberLit
-//     strLit
-//     jPathLit
-//     paren
-//     andOp 
-//     orOp
-//     grOp
-//     lessOp
-//     equalp
-//     notOp
-// ]
 
 let str_ws s = pstring s >>. ws
 
