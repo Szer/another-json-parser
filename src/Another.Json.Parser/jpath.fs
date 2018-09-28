@@ -50,16 +50,11 @@ let opp = new OperatorPrecedenceParser<_,_,_>()
 let expr = opp.ExpressionParser
 opp.TermParser <- terminal <|> between (str_ws "(") (str_ws ")") expr
 
-opp.AddOperator(InfixOperator(">", ws, 1, Associativity.Left, fun e1 e2 -> Greater(e1,e2)))
-opp.AddOperator(InfixOperator("<", ws, 1, Associativity.Left, fun e1 e2 -> Less(e1,e2)))
-opp.AddOperator(InfixOperator("=", ws, 1, Associativity.Left, fun e1 e2 -> Equal(e1,e2)))
-opp.AddOperator(InfixOperator("==", ws, 1, Associativity.Left, fun e1 e2 -> Equal(e1,e2)))
-opp.AddOperator(InfixOperator(">=", ws, 1, Associativity.Left, fun e1 e2 -> Not(Less(e1,e2))))
-opp.AddOperator(InfixOperator("<=", ws, 1, Associativity.Left, fun e1 e2 -> Not(Greater(e1,e2))))
-opp.AddOperator(InfixOperator("&&", ws, 1, Associativity.Left, fun e1 e2 -> And(e1,e2)))
-opp.AddOperator(InfixOperator("&", ws, 1, Associativity.Left, fun e1 e2 -> And(e1,e2)))
-opp.AddOperator(InfixOperator("|", ws, 1, Associativity.Left, fun e1 e2 -> Or(e1,e2)))
-opp.AddOperator(InfixOperator("||", ws, 1, Associativity.Left, fun e1 e2 -> Or(e1,e2)))
+let createOp(literal,op)=opp.AddOperator(InfixOperator(literal, ws, 1, Associativity.Left, fun e1 e2 ->op(e1,e2)))
+let goe(e1,e2)=Not(Less(e1,e2))
+let loe (e1,e2)=Not(Greater(e1,e2))
+[(">",Greater);("<",Less);("=",Equal);("==",Equal);(">=",goe);("<=",loe);("&&",And);("&",And);("|",Or);("||",Or)]|>Seq.iter createOp
+
 opp.AddOperator(PrefixOperator("!", ws, 4, true, Not))
 
 let completeExpression = ws >>. expr .>> ws
