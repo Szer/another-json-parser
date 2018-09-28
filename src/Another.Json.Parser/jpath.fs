@@ -1,6 +1,10 @@
 module JPath
-
+open Json
 open FParsec
+open Hopac
+open Hopac.Stream
+open System.IO
+open Json
 
 let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
     fun stream ->
@@ -108,3 +112,38 @@ do jPathElementRef :=
     ]
 
 let parse = FParsec.CharParsers.run root
+let rec getRecursiveChildren (name:string) (json:Json)=
+       match json with
+        | JObject s->
+                     appended{
+                       yield s|>Stream.filterFun(fun (n,j)->(n=name)) |>JObject
+                       yield! s|>Stream.mapFun (fun (_,j)->getRecursiveChildren name j)
+                     }|>JList
+        | JList l-> appended{
+                       yield! l|>Stream.mapFun(fun s->getRecursiveChildren name s)
+
+                    }|>JList
+
+        |x->x|>Stream.one|>JList
+         
+
+let rec apply (path:JPath)  (json:Json.Json):Result<Json.Json,string> =
+  match path with
+  |Root r->apply r json
+  |Child (name,rest)-> match json with 
+                        |JObject s->s|>Stream.filterFun(fun (n,j)->n=name)
+                                     |>JObject
+                                     |>apply rest  
+                        |JList _|JNumber _|JString _ |JBool _ ->Result.Error (sprintf "tried to apply name %s to wrong json object" name)
+  |RecursiveChild (name,rest)->getRecursiveChildren name json|>apply rest 
+                                 
+  |End->Result.Ok json
+                        
+let parseJson (path:string) (src:string)=
+ match (parse path) with 
+  |Success(p,_,_)->match Json.parse src with 
+                      |Success (j,_,_)->apply p j                                     
+                      |Failure (e,_,_)->Result.Error (sprintf "bad json %A" e)
+  |Failure (e,_,_)->Result.Error (sprintf "Bad jpath %A" e)
+ 
+ 
