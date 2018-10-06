@@ -19,7 +19,7 @@ let positiveCases =[
    ("$..a.b",JPath.RecursiveChild("a",JPath.Child("b",End))), "should parse recursive child with child name"
    ("$[*]",Array (TakeAll,End)), "should take all elements from array"
    ("$[?(@.a>@.b)]",Array(Filter (Expression.Greater (JPathLiteral ["a"],JPathLiteral ["b"])),End)) , "should parse operation with jpath literals"
-   ("$[?(@.a>5)]",Array(Filter (Expression.Greater (JPathLiteral ["a"],Expression.NumberLiteral 5.0)),End)) , "should parse operation with jpath literal and number literal"
+   ("$[?(@.a<5)]",Array(Filter (Expression.Less (JPathLiteral ["a"],Expression.NumberLiteral 5.0)),End)) , "should parse operation with jpath literal and number literal"
    ("$[?(@.a='abc')]",Array(Filter (Expression.Equal (JPathLiteral ["a"],Expression.StringLiteral "abc" )),End)) , "should parse operation with jpath literal and string literal"
   ]
 [<Tests>]
