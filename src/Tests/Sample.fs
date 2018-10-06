@@ -21,6 +21,8 @@ let positiveCases =[
    ("$[?(@.a>@.b)]",Array(Filter (Expression.Greater (JPathLiteral ["a"],JPathLiteral ["b"])),End)) , "should parse operation with jpath literals"
    ("$[?(@.a<5)]",Array(Filter (Expression.Less (JPathLiteral ["a"],Expression.NumberLiteral 5.0)),End)) , "should parse operation with jpath literal and number literal"
    ("$[?(@.a='abc')]",Array(Filter (Expression.Equal (JPathLiteral ["a"],Expression.StringLiteral "abc" )),End)) , "should parse operation with jpath literal and string literal"
+   ("$[?(@.a=null)]",Array(Filter (Expression.Equal (JPathLiteral ["a"],Expression.NullLiteral )),End)) , "should parse operation with jpath literal and null literal"
+   ("$[?(!@.a)]",Array(Filter (Expression.Not(JPathLiteral ["a"])),End)), "should parse not with jpath literal"
    ("$[2,3]",Array(Union [2;3],End)) , "should parse array with slices"
   ]
 [<Tests>]
