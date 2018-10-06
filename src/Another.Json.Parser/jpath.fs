@@ -153,6 +153,10 @@ let apply (path:JPath)  (json:Json.Json) =
             getRecursiveChildren name curJson <*>
             innerApply rest curJson
             |> Job.Ignore
+//        |Array (indexer,rest)->match indexer with 
+//                                |Union l->match curJson
+//                                |TakeAll->
+//                                |Filter expr->
         |End->Job.unit()
     
     innerApply path json
