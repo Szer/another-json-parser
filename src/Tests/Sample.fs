@@ -3,6 +3,9 @@ module Tests
 open Expecto
 open JPath
 open FParsec
+open CombinedParser
+open CombinedParser
+
 let create name (jpath,expected:JPath) = test name{
   let res=jpath|>JPath.parse
   match res with 
@@ -24,6 +27,21 @@ let positiveCases =[
    ("$[?(!@.a)]",Array(Filter (Expression.Not(JPathLiteral ["a"])),End)), "should parse not with jpath literal"
    ("$[2,3]",Array(Union [2;3],End)) , "should parse array with slices"
   ]
+  
+let parseJpathTest=test "should parse json with jpath"{
+                                                         let jpath="$.b"
+                                                         let res=jpath|>JPath.parse
+                                                         match res with 
+                                                          |Success (path ,_,_)->
+                                                                                let json="""{"a":1}"""
+                                                                                let r=parseJson path json
+                                                                                match r with 
+                                                                                |Success (x,_,_)->Expect.isTrue true "Success"
+                                                                                |_->Expect.isFalse true "fail"
+                                                                                
+                                                          |_->Expect.isFalse true "Parse failed"
+                                                          
+                                                       }
 [<Tests>]
 let tests =
   positiveCases

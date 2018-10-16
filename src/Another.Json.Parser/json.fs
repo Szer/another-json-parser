@@ -9,6 +9,7 @@ type Json =
     | JNull   of unit
     | JList   of Json list
     | JObject of (string * Json) list
+    | Empty
 
 type ChildPath =
     | TakeOne
