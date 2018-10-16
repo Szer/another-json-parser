@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="json.fs" />
     <Compile Include="jpath.fs" />
+    <Compile Include="CombinedParser.fs"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Remove="Hopac" />
