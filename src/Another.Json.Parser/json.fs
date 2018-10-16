@@ -1,15 +1,14 @@
 module Json
 
-open Hopac
 open FParsec
 
 type Json =
-    | JString of Promise<string>
-    | JNumber of Promise<float>
-    | JBool   of Promise<bool>
-    | JNull   of Promise<unit>
-    | JList   of Stream<Json>
-    | JObject of Stream<string * Json>
+    | JString of string
+    | JNumber of float
+    | JBool   of bool
+    | JNull   of unit
+    | JList   of Json list
+    | JObject of (string * Json) list
 
 type ChildPath =
     | TakeOne
@@ -49,15 +48,15 @@ let stringLiteral =
 
 
 
-let jstring = stringLiteral |>> (Promise >> JString)
+let jstring = stringLiteral |>>  JString
 
-let jnumber = pfloat |>> (Promise >> JNumber) // pfloat will accept a little more than specified by JSON
+let jnumber = pfloat |>>  JNumber// pfloat will accept a little more than specified by JSON
                                  // as valid numbers (such as NaN or Infinity), but that makes
                                  // it only more robust
 
-let jtrue  = stringReturn "true"  (Promise true |> JBool)
-let jfalse = stringReturn "false" (Promise false |> JBool)
-let jnull  = stringReturn "null" (Promise(()) |> JNull)
+let jtrue  = stringReturn "true"  ( true |> JBool)
+let jfalse = stringReturn "false" ( false |> JBool)
+let jnull  = stringReturn "null" ((()) |> JNull)
 
 // jvalue, jlist and jobject are three mutually recursive grammar productions.
 // In order to break the cyclic dependency, we make jvalue a parser that
@@ -70,8 +69,8 @@ let listBetweenStrings sOpen sClose pElement f =
 
 let keyValue = tuple2 stringLiteral (ws >>. str ":" >>. ws >>. jvalue)
 
-let jlist   = listBetweenStrings "[" "]" jvalue (Stream.ofSeq >> JList)
-let jobject = listBetweenStrings "{" "}" keyValue (Stream.ofSeq >> Stream.distinctByFun fst >> JObject)
+let jlist   = listBetweenStrings "[" "]" jvalue  JList
+let jobject = listBetweenStrings "{" "}" keyValue JObject
 
 do jvalueRef := choice [jobject
                         jlist

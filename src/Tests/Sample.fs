@@ -2,7 +2,6 @@ module Tests
 
 open Expecto
 open JPath
-open Hopac
 open FParsec
 let create name (jpath,expected:JPath) = test name{
   let res=jpath|>JPath.parse

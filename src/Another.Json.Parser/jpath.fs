@@ -1,9 +1,6 @@
 module JPath
 
 open Json
-open Hopac.Infixes
-open Hopac
-open Hopac.Stream
 open FParsec
 
 let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
@@ -114,62 +111,3 @@ do jPathElementRef :=
 let parse = FParsec.CharParsers.run root
 
          
-
-let apply (path:JPath)  (json:Json.Json) =
-    let acc = MVar Stream.nil
-    let add xs = MVar.mutateFun (Stream.append xs) acc :> Job<unit>
-
-    let rec getRecursiveChildren (childName: string) (curJson:Json) : Job<unit> =
-       match curJson with
-        | JObject s ->
-            appended{
-                yield! s|>Stream.chooseFun(fun (n,j)->if n=childName then Some j else None)
-            } |> add 
-            <*>
-            (s |> Stream.mapPipelinedJob 4 (fun (_,j)->getRecursiveChildren childName j))
-            |> Job.Ignore
-        | JList l->
-            l
-            |> Stream.mapPipelinedJob 4(fun s->getRecursiveChildren childName s)
-            |> Stream.iter
-
-        | _ -> Job.unit()
-
-    let rec innerApply (restPath:JPath) (curJson: Json.Json) :Job<unit> =
-        match restPath with
-        | Root r-> innerApply r curJson
-        | Child (name, restPath)->
-            match curJson with 
-            | JObject s -> 
-                s
-                |> Stream.chooseFun (fun (n,j) -> 
-                    if n = name then Some j else None)
-                |> add
-                <*>
-                (s |> Stream.iterJob (fun (n,j) -> innerApply restPath j))
-                |> Job.Ignore
-            | _ -> Job.unit () //мы должны дать ошибку
-        | RecursiveChild (name,rest)->
-            getRecursiveChildren name curJson <*>
-            innerApply rest curJson
-            |> Job.Ignore
-//        |Array (indexer,rest)->match indexer with 
-//                                |Union l->match curJson
-//                                |TakeAll->
-//                                |Filter expr->
-        |End->Job.unit()
-    
-    innerApply path json
-    |> Job.bind (fun _ -> MVar.read acc)
-
-let parseJson (path:string) (src:string)=
- match (parse path) with 
-  |Success(p,_,_)->match Json.parse src with 
-                      |Success (j,_,_)-> apply p j |> Job.map Result.Ok
-                      |Failure (e,_,_)-> Job.result <| Result.Error (sprintf "bad json %A" e)
-  |Failure (e,_,_)-> Job.result <| Result.Error (sprintf "Bad jpath %A" e)
-
-// match j, p with
-// | JObject s, Child (name,rest) ->
-
-//     : Stream<Json.Json>

@@ -2,6 +2,5 @@ framework: auto-detect
 storage: none
 
 source https://api.nuget.org/v3/index.json
-
-nuget Hopac
 nuget FParsec
+nuget Expecto
