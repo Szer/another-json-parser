@@ -15,6 +15,6 @@ steps:
 - script: dotnet build --configuration $(buildConfiguration)
   displayName: 'dotnet build $(buildConfiguration)'
 
-- script: dotnet run -f netcoreapp2.1
+- script: dotnet run
   workingDirectory: src/Another.Json.Parser.Tests/
   displayName: 'tests'

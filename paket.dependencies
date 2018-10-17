@@ -12,6 +12,3 @@ group test
     source https://api.nuget.org/v3/index.json
 
     nuget Expecto
-    nuget YoloDev.Expecto.TestSdk
-    nuget Microsoft.NET.Test.Sdk
-    nuget FSharp.Core
