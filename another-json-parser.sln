@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7F6A6417-315
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Another.Json.Parser", "src\Another.Json.Parser\Another.Json.Parser.fsproj", "{689E235D-86D1-4752-894B-3D0390D48872}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "src\Tests\Tests.fsproj", "{842EB708-34DA-4E5E-B6ED-518B7A5E5EB3}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Another.Json.Parser.Tests", "src\Another.Json.Parser.Tests\Another.Json.Parser.Tests.fsproj", "{842EB708-34DA-4E5E-B6ED-518B7A5E5EB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

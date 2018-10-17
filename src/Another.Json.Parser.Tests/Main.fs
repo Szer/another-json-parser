@@ -1,8 +1,6 @@
-﻿module Main
+﻿module Another.Json.Parser.Tests
 open Expecto
-open Tests
 
 [<EntryPoint>]
 let main argv =
-    Tests.runTests defaultConfig parseJpathTest|>ignore
     Tests.runTestsInAssembly defaultConfig argv

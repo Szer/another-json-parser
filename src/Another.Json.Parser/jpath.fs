@@ -1,19 +1,16 @@
 module JPath
 
-open Json
 open FParsec
 
-let (<!>) (p: Parser<_,_>) label : Parser<_,_> =
-    fun stream ->
-        printfn "%A: Entering %s" stream.Position label
-        let reply = p stream
-        printfn "%A: Leaving %s (%A)" stream.Position label reply.Status
-        reply
-
-type Expression =
+type ExpressionLiteral = 
     | NullLiteral
+    | NotNullLiteral
     | NumberLiteral of double
     | StringLiteral of string
+    | BoolLiteral of bool
+
+type Expression =
+    | Literal of ExpressionLiteral
     | JPathLiteral of string list
     | And of left: Expression * right: Expression
     | Or of left: Expression * right: Expression
@@ -35,14 +32,18 @@ let ws = spaces
 let str_ws s = pstring s >>. ws
 
 let bw p = ws >>. p .>> ws
-let nullLit = str "null"  >>% NullLiteral
-let numberLit = pfloat |> bw |>> NumberLiteral
-let strLit =between (str "'") (str "'") stringLiteral |> bw |>> StringLiteral
+let nullLit = str "null"  >>% (NullLiteral |> Literal)
+let trueLit  = stringReturn "true"  (true |> BoolLiteral |> Literal)
+let falseLit = stringReturn "false" (false |> BoolLiteral |> Literal)
+let numberLit = pfloat |> bw |>> (NumberLiteral >> Literal)
+let strLit =between (str "'") (str "'") stringLiteral |> bw |>> (StringLiteral >> Literal)
 let jPathLit = str "@." >>. sepBy stringLiteral (str ".") |> bw |>> JPathLiteral
 
 let terminal = choice [
     nullLit
     numberLit
+    trueLit
+    falseLit
     strLit
     jPathLit
 ]
@@ -54,7 +55,19 @@ opp.TermParser <- terminal <|> between (str_ws "(") (str_ws ")") expr
 let createOp(literal,op)=opp.AddOperator(InfixOperator(literal, ws, 1, Associativity.Left, fun e1 e2 ->op(e1,e2)))
 let goe(e1,e2)=Not(Less(e1,e2))
 let loe (e1,e2)=Not(Greater(e1,e2))
-[(">",Greater);("<",Less);("=",Equal);("==",Equal);(">=",goe);("<=",loe);("&&",And);("&",And);("|",Or);("||",Or)]|>Seq.iter createOp
+[ ">",Greater
+  "<",Less
+  "=",Equal
+  "==",Equal
+  "!=", Equal >> Not
+  "<>", Equal >> Not
+  ">=",goe
+  "<=",loe
+  "&&",And
+  "&",And
+  "|",Or
+  "||",Or]
+|>Seq.iter createOp
 
 opp.AddOperator(PrefixOperator("!", ws, 4, true, Not))
 
@@ -109,5 +122,3 @@ do jPathElementRef :=
     ]
 
 let parse = FParsec.CharParsers.run root
-
-         

@@ -3,7 +3,6 @@ module CombinedParser
 open FParsec
 open Json
 open JPath
-open System
 
 let inline (<<|) f x = x |>> f
 let inline (^) f x = f x
@@ -24,6 +23,7 @@ do jvalueRef :=
       Json.jnull ]
     |> List.map ((<<|) Seq.singleton)
     |> choice
+
 let json = ws >>. jvalue .>> ws .>> eof
 
 let choose name =
@@ -41,55 +41,85 @@ let rec chooseRec name =
         | _ -> Seq.empty
     >> Seq.collect id
 
-// type Expression =
-//     | NullLiteral
-//     | NumberLiteral of double
-//     | StringLiteral of string
-//     | JPathLiteral of string list
-//     | And of left: Expression * right: Expression
-//     | Or of left: Expression * right: Expression
-//     | Not of expr: Expression
-//     | Greater of left: Expression * right: Expression
-//     | Less of left: Expression * right: Expression
-//     | Equal of left: Expression * right: Expression
+let rec openJpathLiteral names json =
+    match names with
+    | [] ->
+        match json with
+        | JBool b   -> BoolLiteral b
+        | JNumber n -> NumberLiteral n
+        | JNull     -> NullLiteral
+        | JString s -> StringLiteral s
+        | _         -> NotNullLiteral
+        |> Some
+    | name::rest ->
+        choose name [json]
+        |> Seq.tryHead
+        |> Option.bind (openJpathLiteral rest)
 
-// type Indexer = 
-//     | TakeAll
-//     | Filter of expression: Expression
-//     | Union of int list
-
-//$.[?(@.ab>5)]
+let rec resolve json = function
+    | And (l,r) ->
+        match resolve json l, resolve json r with
+        | BoolLiteral a, BoolLiteral b -> BoolLiteral (a && b)
+        | _ -> NullLiteral
+    | Or (l,r) ->
+        match resolve json l, resolve json r with
+        | BoolLiteral a, BoolLiteral b -> BoolLiteral (a || b)
+        | _ -> NullLiteral
+    | Greater (l,r) ->
+        match resolve json l, resolve json r with
+        | NumberLiteral a, NumberLiteral b -> BoolLiteral(a > b)
+        | StringLiteral a, StringLiteral b -> BoolLiteral(a > b)
+        | _ -> NullLiteral
+    | Less (l,r) ->
+        match resolve json l, resolve json r with
+        | NumberLiteral a, NumberLiteral b -> BoolLiteral (a < b)
+        | StringLiteral a, StringLiteral b -> BoolLiteral (a < b)
+        | _ -> NullLiteral
+    | Equal (l,r) ->
+        match resolve json l, resolve json r with
+        | NumberLiteral a, NumberLiteral b -> BoolLiteral (a = b)
+        | StringLiteral a, StringLiteral b -> BoolLiteral (a = b)
+        | BoolLiteral a, BoolLiteral b     -> BoolLiteral (a = b)
+        | NullLiteral, NullLiteral         -> BoolLiteral true
+        | NullLiteral, _ | _, NullLiteral  -> BoolLiteral false
+        | _ -> NullLiteral
+    | Not e ->
+        match resolve json e with
+        | BoolLiteral b -> BoolLiteral (not b)
+        | _ -> NullLiteral
+    | Literal lit -> lit
+    | JPathLiteral names ->
+        openJpathLiteral names json
+        |> Option.defaultValue NullLiteral
 
 let rec takeIndices indList =
     Seq.indexed
     >> Seq.filter (fun (i,_) -> List.contains i indList)
     >> Seq.map snd
 
-let mapList f =
-    Seq.map ^function
+let mapJList f =
+    Seq.collect ^function
     | JList js -> f js
-    | x        -> Seq.empty
-    >> Seq.collect id
+    | _        -> Seq.empty
 
-let rec createPredicate index acc = 
-    match index with
-    | TakeAll       -> acc |>> mapList Seq.ofList
-    | Union indices -> acc |>> mapList (takeIndices indices)
-    | Filter expr   -> acc
+let rec createPredicate acc = function
+    | TakeAll       -> acc |>> mapJList Seq.ofList
+    | Union indices -> acc |>> mapJList ^takeIndices indices
+    | Filter expr   -> acc |>> mapJList ^Seq.filter ^fun j ->
+        match resolve j expr with
+        | BoolLiteral b -> b
+        | _ -> false
 
 let rec createParserFromJPath jpath acc =
     match jpath with
-    | Child (n, End) ->
-        let name = sprintf "%s" n
+    | Child (name, End) ->
         acc |>> choose name
 
-    | RecursiveChild (n, rest)-> 
-        let name= sprintf "%s" n
+    | RecursiveChild (name, rest) ->
         acc |>> chooseRec name
         |> createParserFromJPath rest
 
-    | Child (n, rest) -> 
-        let name= sprintf "%s" n
+    | Child (name, rest) ->
         acc
         |>> (Seq.choose ^function
             | Json.JObject l ->
@@ -98,10 +128,29 @@ let rec createParserFromJPath jpath acc =
                     then Some j
                     else None) l
             | _ -> None)
-        |>createParserFromJPath rest
-    | Root rest -> createParserFromJPath rest acc
+        |> createParserFromJPath rest
+
+    | Root rest ->
+        createParserFromJPath rest acc
+
+    | JArray (indexer, rest) ->
+        createPredicate acc indexer
+        |> createParserFromJPath rest
+
     | _ -> acc
 
-let parseJson jpath =
-  let parser = createParserFromJPath jpath json
-  FParsec.CharParsers.run parser
+let inline pBind f x =
+    match x with
+    | Success (x,_,_) -> f x
+    | Failure (a,b,c) -> Failure (a,b,c)
+
+let unwrap = function
+    | Success (x,_,_) -> x
+    | _ -> Seq.empty
+
+let parseJson jpathString jsonString =
+    FParsec.CharParsers.run JPath.root jpathString
+    |> pBind ^fun jPath ->
+        FParsec.CharParsers.run (createParserFromJPath jPath json) jsonString
+    |> unwrap
+    |> Seq.cache

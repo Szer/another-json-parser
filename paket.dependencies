@@ -3,4 +3,15 @@ storage: none
 
 source https://api.nuget.org/v3/index.json
 nuget FParsec
-nuget Expecto
+
+group test
+
+    framework: auto-detect
+    storage: none
+
+    source https://api.nuget.org/v3/index.json
+
+    nuget Expecto
+    nuget YoloDev.Expecto.TestSdk
+    nuget Microsoft.NET.Test.Sdk
+    nuget FSharp.Core

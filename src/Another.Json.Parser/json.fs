@@ -6,7 +6,7 @@ type Json =
     | JString of string
     | JNumber of float
     | JBool   of bool
-    | JNull   of unit
+    | JNull
     | JList   of Json list
     | JObject of (string * Json) list
 
@@ -45,7 +45,7 @@ let jnumber = pfloat |>>  JNumber// pfloat will accept a little more than specif
 
 let jtrue  = stringReturn "true"  ( true |> JBool)
 let jfalse = stringReturn "false" ( false |> JBool)
-let jnull  = stringReturn "null" ((()) |> JNull)
+let jnull  = stringReturn "null" JNull
 
 // jvalue, jlist and jobject are three mutually recursive grammar productions.
 // In order to break the cyclic dependency, we make jvalue a parser that

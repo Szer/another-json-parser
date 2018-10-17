@@ -10,15 +10,7 @@
     <Compile Include="Main.fs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Expecto" Version="8.*" />
-    <PackageReference Include="FSharp.Core" Version="4.*" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.*" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Another.Json.Parser\Another.Json.Parser.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="paket.references" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
