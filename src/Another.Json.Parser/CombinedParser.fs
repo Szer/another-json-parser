@@ -34,9 +34,7 @@ let rec chooseRec name res=res|>Seq.map(function
 
 let rec createParserFromJPath (jpath:JPath) (acc:Parser<Json.Json seq,unit>)=
  match jpath with 
- | JPath.Child (n,End) -> let name= sprintf "%s" n
-                          acc 
-                           |>> (fun r->choose name r)
+ | JPath.Child (n,End) -> n|>sprintf "%s"|> (fun name->acc |>> (fun r->choose name r))
                            
  | RecursiveChild (n,rest)-> let name= sprintf "%s" n
                              acc  |>>(fun r-> chooseRec name r)|>
