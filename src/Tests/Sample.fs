@@ -29,11 +29,11 @@ let positiveCases =[
   ]
   
 let parseJpathTest=test "should parse json with jpath"{
-                                                         let jpath="$.b"
+                                                         let jpath="$..a"
                                                          let res=jpath|>JPath.parse
                                                          match res with 
                                                           |Success (path ,_,_)->
-                                                                                let json="""{"a":1}"""
+                                                                                let json="""[{"a":{"a":1}},{"a":{"a":"ddd"}}]"""
                                                                                 let r=parseJson path json
                                                                                 match r with 
                                                                                 |Success (x,_,_)->Expect.isTrue true "Success"
