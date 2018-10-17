@@ -69,7 +69,7 @@ type JPath =
     | Root of rest: JPath
     | Child of name: string * rest: JPath
     | RecursiveChild of name: string * rest: JPath
-    | Array of index: Indexer * rest: JPath
+    | JArray of index: Indexer * rest: JPath
     | End
 
 let jPathElement, jPathElementRef = createParserForwardedToRef()
@@ -97,7 +97,7 @@ let root     = str "$" >>. (jPathElement |>> Root)
 let recChild = str ".." >>. childName RecursiveChild
 let child    = str "." >>. childName Child
 let array    = between (str "[") (str "]") indexer >>= fun index ->
-    jPathElement |>> fun rest -> Array(index, rest)
+    jPathElement |>> fun rest -> JArray(index, rest)
 
 do jPathElementRef :=
     choice [

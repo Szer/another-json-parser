@@ -9,20 +9,8 @@ type Json =
     | JNull   of unit
     | JList   of Json list
     | JObject of (string * Json) list
-    | Empty
 
-type ChildPath =
-    | TakeOne
-    | TakeAll
-    | TakeRange of arrayRange: string
-    | TakeByPredicate of predicate: string
-
-type JPath = 
-    | DirectChild of rest: JPath
-    | RecursiveChild of rest: JPath
-    | Child of name: string * arrayPath: ChildPath * rest: JPath
-     | EndOfPath
-
+// open Json
 let ws   = spaces // eats any whitespace
 let str s = pstring s
 
