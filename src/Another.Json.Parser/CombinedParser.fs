@@ -11,8 +11,8 @@ do jvalueRef := [Json.jobject
                  Json.jtrue
                  Json.jfalse
                  Json.jnull]
-                 |>List.map(fun p->p|>> Seq.singleton)|>choice
-let json = ws >>. jvalue .>> ws .>> eof |>>Seq.singleton|>>Seq.collect id
+                |>List.map(fun p->p|>> Seq.singleton)|>choice
+let json = ws >>. jvalue .>> ws .>> eof
                         
 let choose name  res =res|>Seq.map (function
                                       |Json.JObject l-> l|>List.tryFind (fun (n,s)->n=name) 
